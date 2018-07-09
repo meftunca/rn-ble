@@ -34,7 +34,7 @@ export default class App extends Component {
       selectDeviceData: {},
       isDeviceConnected: false,
       bleStatus: false,
-      id: "06:73:01:00:10:90",
+      id: "99:99:01:00:10:90",
       getMessage: []
     };
     this.scanAndConnect = this.scanAndConnect.bind(this);
@@ -85,45 +85,38 @@ export default class App extends Component {
     );
     const firstResp = characteristic.read();
     firstResp.then(async v => {
-      console.log(toByteArray(v.value));
       this.toHexString("0xa1", v.value);
       let secondData = postData;
       secondData[3] = 0xa2;
-      console.log("test", this.state.getMessage["0xa1"]);
-      setTimeout(() => {
-        if (this.state.getMessage["0xa1"] !== undefined) {
-          const secondCharacteristic = await this.manager.writeCharacteristicWithoutResponseForDevice(
-            device.id,
-            service,
-            char,
-            fromByteArray(secondData)
-          );
-          const secondResp = secondCharacteristic.read();
-          secondResp.then(v => {
-            console.log("0xa2", toByteArray(v.value));
-            this.toHexString("0xa2", v.value);
-            let thirdData = postData;
-            thirdData[3] = 0xa5;
-          });
-        }},500)
-      setTimeout(() => {
-        if (this.state.getMessage["0xa1"] !== undefined && this.state.getMessage["0xa2"] !== undefined) {
-          const thirdCharacteristic = await this.manager.writeCharacteristicWithoutResponseForDevice(
-            device.id,
-            service,
-            char,
-            fromByteArray(thirdData)
-          );
-          const thirdResp = thirdCharacteristic.read();
-          thirdResp.then(async v => {
-            console.log("0xa5", toByteArray(v.value));
-            this.toHexString("0xa5", v.value);
-          });
-        }},1500)
-
-
+      if (this.state.getMessage["0xa1"]) {
+        const secondCharacteristic = await this.manager.writeCharacteristicWithoutResponseForDevice(
+          device.id,
+          service,
+          char,
+          fromByteArray(secondData)
+        );
+        const secondResp = secondCharacteristic.read();
+        secondResp.then(v => {
+          console.log("0xa2", toByteArray(v.value));
+          this.toHexString("0xa2", v.value);
+          let thirdData = postData;
+          thirdData[3] = 0xa5;
+        });
+      }
+      if (this.state.getMessage["0xa1"] && this.state.getMessage["0xa2"]) {
+        const thirdCharacteristic = await this.manager.writeCharacteristicWithoutResponseForDevice(
+          device.id,
+          service,
+          char,
+          fromByteArray(thirdData)
+        );
+        const thirdResp = thirdCharacteristic.read();
+        thirdResp.then(async v => {
+          console.log("0xa5", toByteArray(v.value));
+          this.toHexString("0xa5", v.value);
+        });
+      }
     });
-    console.log(this.state.getMessage);
   }
   /*
         * Cihaz bağlantısını kopar
@@ -144,16 +137,16 @@ export default class App extends Component {
   }
 
   scanAndConnect() {
-    console.log("test")
-    
+    let obj = {},
+      deviceArr = [];
     this.manager.startDeviceScan(null, null, (error, device) => {
       if (error) {
         // Handle error (scanning will be stopped automatically)
         this.setState({ info: "cihazlar bulunamadı", bleStatus: false });
         return false;
       }
-      console.log(device)
-      if (device.id !== null && device.name === "PAVO Panic ") {
+
+      if (device.id !== null && device.id === this.state.id) {
         // Creating an array of devices with names
         this.setState({ bleStatus: true });
         this.manager.stopDeviceScan();
